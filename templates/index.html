@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>חזוי מחיר דירה</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            margin: 100px;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            color: #0c0101;
+        }
+        form {
+            background: #fbfafa;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 6px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .required-star {
+            color: red;
+            margin-right: 5px;
+        }
+        .note {
+            color: #fb0202;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .checkbox-group label {
+            display: inline-block;
+            width: 45%;
+            margin-top: 8px;
+        }
+        .prediction-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e6ffe6;
+            border: 1px solid #28a745;
+            border-radius: 5px;
+            font-size: 18px;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h2>הזן פרטי דירה:</h2>
+    {% if error %}
+    <div style="color: red; font-weight: bold;">
+        {{ error }}
+    </div>
+{% endif %}
+    <form name="apartmentForm" method="POST" action="/predict" onsubmit="return validateForm()">
+
+        <label><span class="required-star">*</span>איזור בארץ:</label>
+        <select name="region_in_israel" required>
+            <option value="">-- בחר איזור --</option>
+            <option value="תל אביב" {% if request.form.region_in_israel == 'תל אביב' %}selected{% endif %}>תל אביב</option>
+        </select>
+
+        <label><span class="required-star">*</span>עיר:</label>
+        <select name="city" required>
+            <option value="">-- בחר עיר --</option>
+            <option value="תל אביב" {% if request.form.city == 'תל אביב' %}selected{% endif %}>תל אביב-יפו</option>
+        </select>
+
+        <label><span class="required-star">*</span>שכונה:</label>
+        <select id="neighborhood" name="neighborhood" style="width: 100%;" required>
+            <option value="">-- בחר שכונה --</option>
+            {% set selected_neighborhood = request.form.get('neighborhood') %}
+            {% for nb in [
+              'אזורי חן', 'אפקה', 'בית שטראוס', 'בצרון', 'גבעת הרצל', 'גני צהלה', 'דקר', 'הגוש הגדול', 'הדר יוסף',
+              'הצפון החדש החלק הדרומי', 'הצפון החדש החלק הצפוני', 'הצפון החדש סביבת ככר המדינה',
+              'הצפון הישן החלק הדרום מזרחי', 'הצפון הישן החלק הדרום מערבי', 'הצפון הישן החלק המרכזי',
+              'הצפון הישן החלק הצפוני', 'הקריה', 'התקווה', 'חוף הצוק', 'יד אליהו', 'יפו ג', 'יפו ד',
+              'כוכב הצפון', 'כפיר', 'כרם התימנים', 'לב תל אביב החלק הדרומי', 'לב תל אביב החלק הצפוני',
+              'לבנה', 'לינקולן', 'מונטיפיורי', 'מע"ר צפוני', 'מעוז אביב א', 'מרכז יפו מזרחית לשדרות ירושלים',
+              'מרכז יפו מערבית לשדרות ירושלים', 'נאות אפקה א', 'נאות אפקה ב', 'נוה אביבים', 'נוה אליעזר',
+              'נוה ברבור', 'נוה חן', 'נוה שאנן', 'נוה שרת', 'נחלת יצחק', 'ניר אביב', 'נמל תל אביב', 'עג\'מי',
+              'עזרא', 'פלורנטין', 'צהלון', 'צפון יפו', 'קרית שלום', 'רביבים', 'רמת אביב', 'רמת אביב ג',
+              'רמת אביב החדשה', 'רמת החייל', 'רמת הטייסים', 'רמת ישראל', 'שבזי', 'שיכון בבלי', 'שיכוני חסכון',
+              'שפירא', 'תוכנית ל', 'תל ברוך צפון', 'תל חיים', 'תל כביר'
+            ] %}
+              <option value="{{ nb }}" {% if selected_neighborhood == nb %}selected{% endif %}>{{ nb }}</option>
+            {% endfor %}
+          </select>
+
+
+        <label><span class="required-star">*</span>סוג הנכס:</label>
+        <select name="property_type" required>
+            <option value="">-- בחר סוג נכס --</option>
+            <option value="דירה" {% if request.form.property_type == 'דירה' %}selected{% endif %}>דירה</option>
+            <option value="דירת גן" {% if request.form.property_type == 'דירת גן' %}selected{% endif %}>דירת גן</option>
+            <option value="דופלקס" {% if request.form.property_type == 'דופלקס' %}selected{% endif %}>דופלקס</option>
+            <option value="פנטהאוז" {% if request.form.property_type == 'פנטהאוז' %}selected{% endif %}>פנטהאוז</option>
+            <option value="קוטג" {% if request.form.property_type == 'קוטג' %}selected{% endif %}>קוטג</option>
+            <option value="מגרש" {% if request.form.property_type == 'מגרש' %}selected{% endif %}>מגרש</option>
+        </select>
+
+
+        <label><span class="required-star">*</span>מספר חדרים:</label>
+        <input type="number" name="room_num" min="1" max="10" step="0.5" value="{{ request.form.room_num or '' }}" required>
+
+        <label><span class="required-star">*</span>קומה:</label>
+        <input type="number" name="floor" min="1" max="20" value="{{ request.form.floor or '' }}" required>
+
+        <label>סה"כ קומות:</label>
+        <input type="number" name="total_floors" min="1" max="20" value="{{ request.form.total_floors or '' }}">
+
+        <label><span class="required-star">*</span>שטח (מ"ר):</label>
+        <input type="number" name="area" min="20" max="500" value="{{ request.form.area or '' }}" required>
+
+        <label>תשלומים בשנה:</label>
+        <input type="number" name="num_of_payment" min="1" max="12" value="{{ request.form.num_of_payment or '' }}">
+
+        <label>שטח גינה:</label>
+        <input type="number" name="garden_area" max="300" value="{{ request.form.garden_area or '' }}">
+
+        <h3>מאפיינים:</h3>
+        <div class="checkbox-group">
+            <label><input type="checkbox" name="ac" {% if request.form.get('ac') %}checked{% endif %}> מיזוג</label>
+            <label><input type="checkbox" name="handicap" {% if request.form.get('handicap') %}checked{% endif %}> נגישות</label>
+            <label><input type="checkbox" name="is_renovated" {% if request.form.get('is_renovated') %}checked{% endif %}> משופצת</label>
+            <label><input type="checkbox" name="has_balcony" {% if request.form.get('has_balcony') %}checked{% endif %}> מרפסת</label>
+            <label><input type="checkbox" name="elevator" {% if request.form.get('elevator') %}checked{% endif %}> מעלית</label>
+            <label><input type="checkbox" name="has_bars" {% if request.form.get('has_bars') %}checked{% endif %}> סורגים</label>
+            <label><input type="checkbox" name="has_safe_room" {% if request.form.get('has_safe_room') %}checked{% endif %}> ממ"ד</label>
+            <label><input type="checkbox" name="is_furnished" {% if request.form.get('is_furnished') %}checked{% endif %}> ריהוט</label>
+            <label><input type="checkbox" name="has_storage" {% if request.form.get('has_storage') %}checked{% endif %}> מחסן</label>
+            <label><input type="checkbox" name="has_parking" {% if request.form.get('has_parking') %}checked{% endif %}> חניה</label>
+        </div>
+
+        <div  class="note" > שדות המסומנים בכוכבית (*) הם שדות חובה</div>
+
+        <input type="submit" value="חשב מחיר">
+    </form>
+
+    {% if prediction %}
+        <div class="prediction-box">
+            המחיר החזוי: {{ prediction }} ₪
+        </div>
+    {% endif %}
+
+    <script>
+        $(document).ready(function() {
+            $('#neighborhood').select2({
+                dir: "rtl",
+                placeholder: "בחר שכונה"
+            });
+        });
+
+        function validateForm() {
+          const form = document.forms["apartmentForm"];
+          const floorValue = form["floor"].value;
+          const totalFloorsValue = form["total_floors"].value;
+          const propertyType = form["property_type"].value;
+
+          const floor = parseInt(floorValue);
+          
+          if (totalFloorsValue) {
+              const totalFloors = parseInt(totalFloorsValue);
+
+              if (floor > totalFloors) {
+                  alert("הקומה לא יכולה להיות גבוהה ממספר הקומות הכולל.");
+                  return false;}
+
+              if (propertyType === "פנטהאוז" && floor !== totalFloors) {
+                  alert("פנטהאוז חייב להיות בקומה העליונה.");
+                  return false;}
+              }
+
+          return true;
+          }
+    </script>
+</body>
+</html>                                                                    
